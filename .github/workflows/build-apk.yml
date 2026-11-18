@@ -22,8 +22,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # Do NOT use android-actions/setup-android — v3 tries to install the
+      # obsolete 'tools' package and fails (run #1, 2026-11-18). The runner
+      # already has an Android SDK; just install the packages we need.
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
       - name: Set up Gradle 7.5
         uses: gradle/actions/setup-gradle@v3
         with:
