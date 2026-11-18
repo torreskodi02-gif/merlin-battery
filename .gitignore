@@ -1,0 +1,8 @@
+local.properties
+*.apk
+*.apks
+app/build/
+build/
+.gradle/
+*.keystore
+*.hprof

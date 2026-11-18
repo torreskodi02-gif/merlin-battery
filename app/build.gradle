@@ -1,0 +1,61 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+def vcProp = project.findProperty("versionCodeProp")
+def vc = 10001
+if (vcProp != null) { vc = vcProp.toString().toInteger() }
+
+android {
+    namespace 'app.merlinbattery'
+    compileSdk 33
+    defaultConfig {
+        applicationId "app.merlinbattery"
+        minSdk 26
+        targetSdk 30
+        versionCode vc
+        versionName "1.0.0"
+    }
+    // Stable signing key: a fresh debug key on every CI build breaks
+    // updates (Android refuses to install over a differently-signed build).
+    // app/merlin.keystore.b64 is committed; it is decoded here at config
+    // time and used for BOTH debug and release so updates always install.
+    // Keystore password / alias / key password are the public defaults
+    // "merlinbattery" — this is a sideloaded app, not a Play release.
+    // If you fork this, generate your own keystore and replace the file.
+    def keystoreB64 = file("merlin.keystore.b64")
+    def keystoreFile = file("merlin.keystore")
+    if (keystoreB64.exists() && !keystoreFile.exists()) {
+        def bytes = keystoreB64.text.replaceAll("\\s", "").decodeBase64()
+        keystoreFile.bytes = bytes
+    }
+    signingConfigs {
+        stable {
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword "merlinbattery"
+                keyAlias "merlin"
+                keyPassword "merlinbattery"
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            if (keystoreFile.exists()) signingConfig signingConfigs.stable
+        }
+        release {
+            minifyEnabled false
+            if (keystoreFile.exists()) signingConfig signingConfigs.stable
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions { jvmTarget = '1.8' }
+}
+
+// Zero external dependencies on purpose: the app is plain framework
+// widgets + Kotlin stdlib only. That keeps the build fast, offline, and
+// free of the Gradle-daemon / dependency-download failure modes.
+dependencies {
+}
